@@ -6,6 +6,7 @@ import extractCSS from './extract-cssdfn.js';
 import extractDefinitions from './extract-dfns.js';
 import extractReferences from './extract-references.js';
 import extractLinks from './extract-links.js';
+import extractSteps from './extract-steps.js';
 import { canonicalizeUrl, canonicalizesTo } from './canonicalize-url.js';
 
 
@@ -23,6 +24,7 @@ window.reffy = Object.assign(
     extractReferences,
     extractLinks,
     canonicalizeUrl,
-    canonicalizesTo
+    canonicalizesTo,
+    extractSteps
   }
 );

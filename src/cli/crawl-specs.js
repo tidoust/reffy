@@ -128,6 +128,20 @@ async function createInitialSpecDescriptions(list) {
 }
 
 
+async function getSubfolder(folder, name) {
+    let subfolder = path.join(folder, name);
+    try {
+        await fs.promises.mkdir(subfolder);
+    }
+    catch (err) {
+        if (err.code !== 'EEXIST') {
+            throw err;
+        }
+    }
+    return subfolder;
+}
+
+
 /**
  * Load and parse the given spec.
  *
@@ -137,7 +151,7 @@ async function createInitialSpecDescriptions(list) {
  * @param {Object} crawlOptions Crawl options
  * @return {Promise<Object>} The promise to get a spec object with crawl info
  */
-async function crawlSpec(spec, crawlOptions) {
+async function crawlSpec(spec, crawlOptions, resultsPath) {
     spec.title = spec.title || (spec.shortname ? spec.shortname : spec.url);
     spec.crawled = crawlOptions.publishedVersion ?
         spec.datedUrl || spec.latest || spec.url :
@@ -160,7 +174,9 @@ async function crawlSpec(spec, crawlOptions) {
                 dfns: window.reffy.extractDefinitions(),
                 refs: window.reffy.extractReferences(),
                 idl: window.reffy.extractWebIdl(),
-                css: window.reffy.extractCSS()
+                css: window.reffy.extractCSS(),
+                steps: window.reffy.extractSteps(),
+                html: window.document.documentElement.outerHTML
             };
         });
 
@@ -206,6 +222,25 @@ async function crawlSpec(spec, crawlOptions) {
                 }
             }
         });
+
+        // Save spec steps into JSON files.
+        // This is not included in `spec` and thus in the final `crawl.json`,
+        // to save memory and `crawl.json` size, because its size is large.
+        const senkoFolder = await getSubfolder(resultsPath, 'senko');
+        await new Promise((resolve, reject) => {
+          fs.mkdir(senkoFolder, err => {
+              if (err && (err.code !== 'EEXIST')) return reject(err);
+              resolve();
+            });
+        });
+        const steps = JSON.stringify({
+            url: spec.url,
+            concepts: result.steps,
+            html: result.html
+          }, null, 2);
+        fs.writeFileSync(
+            path.join(senkoFolder, getShortname(spec) + '.json'),
+            steps);
 
         // Copy results back into initial spec object
         spec.crawled = result.crawled;
@@ -271,7 +306,7 @@ async function crawlList(speclist, crawlOptions, resultsPath) {
         const spec = specAndPromise.spec;
         const logCounter = ('' + (idx + 1)).padStart(nbStr.length, ' ') + '/' + nbStr;
         console.log(`${logCounter} - ${spec.url} - crawling`);
-        const result = await crawlSpec(spec, crawlOptions);
+        const result = await crawlSpec(spec, crawlOptions, resultsPath);
         console.log(`${logCounter} - ${spec.url} - done`);
         flagNextSpecAsReadyToCrawl();
         return result;
@@ -302,21 +337,9 @@ async function crawlList(speclist, crawlOptions, resultsPath) {
  * @return {Promise<void>} The promise to have saved the data
  */
 async function saveResults(crawlInfo, crawlOptions, data, folder) {
-    async function getSubfolder(name) {
-        let subfolder = path.join(folder, name);
-        try {
-            await fs.promises.mkdir(subfolder);
-        }
-        catch (err) {
-            if (err.code !== 'EEXIST') {
-                throw err;
-            }
-        }
-        return subfolder;
-    }
-    const idlFolder = await getSubfolder('idl');
-    const cssFolder = await getSubfolder('css');
-    const dfnsFolder = await getSubfolder('dfns');
+    const idlFolder = await getSubfolder(folder, 'idl');
+    const cssFolder = await getSubfolder(folder, 'css');
+    const dfnsFolder = await getSubfolder(folder, 'dfns');
 
     async function saveIdl(spec) {
         let idlHeader = `
