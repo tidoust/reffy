@@ -44,7 +44,7 @@
   },
   "dependencies": {
     "abortcontroller-polyfill": "1.7.3",
-    "browser-specs": "2.1.0",
+    "browser-specs": "2.2.0",
     "commander": "8.0.0",
     "fetch-filecache-for-crawling": "4.0.2",
     "node-pandoc": "0.3.0",
