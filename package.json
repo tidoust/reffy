@@ -57,7 +57,7 @@
     "nock": "13.1.1",
     "respec": "26.9.3",
     "respec-hljs": "2.1.1",
-    "rollup": "2.53.0"
+    "rollup": "2.53.2"
   },
   "scripts": {
     "all": "node reffy.js run ed all && node reffy.js run tr all",
